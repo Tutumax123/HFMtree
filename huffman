@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_TREE_NODES 100
+#define MAX_BIT_NUM 20
+#define CHAR_NUM 10 // 假设我们处理的是0-9的数字
+
+typedef struct HTNode {
+    int data; // 存放数字（0-9）
+    int weight;
+    int parent, lchild, rchild;
+} HTNode, *HuffmanTree;
+
+typedef struct HCode {
+    char cd[MAX_BIT_NUM];
+    int start;
+} HCode, *HuffmanCode;
+
+void CreateHT(HuffmanTree ht, int freq[], int n) {
+    int i, k, lnode, rnode;
+    int min1, min2;
+
+    for (i = 0; i < 2 * n - 1; i++) {
+        ht[i].parent = ht[i].lchild = ht[i].rchild = -1;
+    }
+
+    min1 = min2 = INT_MAX;
+
+    for (i = n; i < 2 * n - 1; i++) {
+        lnode = rnode = -1;
+        min1 = min2 = INT_MAX;
+        for (k = 0; k < i; k++) {
+            if (ht[k].parent == -1) {
+                if (freq[k] < min1) {
+                    min2 = min1;
+                    rnode = lnode;
+                    min1 = freq[k];
+                    lnode = k;
+                } else if (freq[k] < min2) {
+                    min2 = freq[k];
+                    rnode = k;
+                }
+            }
+        }
+
+        ht[i].weight = freq[lnode] + freq[rnode];
+        ht[i].lchild = lnode;
+        ht[i].rchild = rnode;
+        ht[lnode].parent = i;
+        ht[rnode].parent = i;
+    }
+}
+
+void CreateHCode(HuffmanTree ht, HuffmanCode hcd, int freq[], int n) {
+    int i, f, c;
+    HCode hc;
+    for (i = 0; i < n; i++) {
+        hc.start = MAX_BIT_NUM - 1;
+        c = i;
+        f = ht[i].parent;
+        while (f != -1) {
+            if (ht[f].lchild == c) {
+                hc.cd[hc.start--] = '0';
+            } else {
+                hc.cd[hc.start--] = '1';
+            }
+            c = f;
+            f = ht[f].parent;
+        }
+        hc.start++;
+        hcd[i] = hc;
+    }
+}
+
+void PrintHCode(HuffmanCode hcd, int freq[], int n) {
+    for (int i = 0; i < n; i++) {
+        if (freq[i] > 0) { // 只打印出现过的数字的编码
+            printf("Number: %d, Huffman Code: ", i);
+            for (int j = hcd[i].start; j < MAX_BIT_NUM; j++) {
+                printf("%c", hcd[i].cd[j]);
+            }
+            printf("\n");
+        }
+    }
+}
+
+int main() {
+    char input[1000]; // 假设输入的数字串长度不超过1000个字符
+    int freq[CHAR_NUM] = {0}; // 数字0-9的出现次数
+    HuffmanTree ht = (HuffmanTree)malloc(MAX_TREE_NODES * sizeof(HTNode));
+    HuffmanCode hcd = (HuffmanCode)malloc(CHAR_NUM * sizeof(HCode));
+    int n = CHAR_NUM; // 数字0-9，共10个
+
+    printf("请输入一串数字：\n");
+    scanf("%s", input);
+
+    // 统计每个数字的出现次数
+    for (int i = 0; input[i] != '\0'; i++) {
+        if (input[i] >= '0' && input[i] <= '9') {
+            freq[input[i] - '0']++;
+        } else {
+            printf("输入包含非法字符，请输入0-9之间的数字。\n");
+            free(ht);
+            free(hcd);
+            return 1;
+        }
+    }
+
+    // 初始化哈夫曼树节点数据
+    for (int i = 0; i < n; i++) {
+        ht[i].data = i;
+        ht[i].weight = freq[i];
+    }
+
+    // 构建哈夫曼树
+    CreateHT(ht, freq, n);
+
+    // 生成哈夫曼编码
+    CreateHCode(ht, hcd, freq, n);
+
+    // 打印哈夫曼编码
+    PrintHCode(hcd, freq, n);
+
+    // 释放内存
+    free(ht);
+    free(hcd);
+
+    return 0;
+}
